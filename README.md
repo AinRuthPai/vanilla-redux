@@ -1,70 +1,190 @@
-# Getting Started with Create React App
+# Vanilla Redux
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+- install
 
-## Available Scripts
+  redux
+  react-redux
+  react-router-dom
 
-In the project directory, you can run:
+## 코드 분석
 
-### `npm start`
+### add 버튼을 누르면 +1, minus 버튼을 누르면 -1이 되는 프로그램
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+```javascript
+const add = document.querySelector("#add");
+const minus = document.querySelector("#minus");
+const number = document.querySelector("span");
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+number.innerText = 0;
 
-### `npm test`
+// reducer
+// 현재 상태(count = 0)의 어플리케이션 / action과 함께 불려지는 함수
+// countModifier가 return하는 것은 어플리케이션의 state가 됨
+const countModifier = (count = 0, action) => {
+  if (action.type === "ADD") {
+    return count + 1;
+  } else if (action.type === "MINUS") {
+    return count - 1;
+  } else {
+    return count;
+  }
+};
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+const countStore = createStore(countModifier);
 
-### `npm run build`
+// 현재 상태를 number.innerText 에 넣어주는 코드이다
+const onChange = () => {
+  number.innerText = countStore.getState();
+};
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+// 변화를 store에서 감지하고 싶다면 subscribe를 사용한다
+// 변화를 감지하고, onChange 함수를 실행하는 문장이다
+countStore.subscribe(onChange);
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+add.addEventListener("click", () => {
+  // reducer에게 dispatch를 이용하여 action을 보낸다
+  // dispatch가 reducer를 불러서 current state와 action을 더한다
+  // action은 무조건 object여야 한다 && type이 존재하여야 한다
+  countStore.dispatch({ type: "ADD" });
+});
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+minus.addEventListener("click", () => {
+  countStore.dispatch({ type: "MINUS" });
+});
+```
 
-### `npm run eject`
+- 수정된 코드
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+```javascript
+// string이 아닌 변수로 지정하게 되면, 오타가 있더라도 오류를 찾기 편해진다
+const ADD = "ADD";
+const MINUS = "MINUS";
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+const countModifier = (count = 0, action) => {
+  // if 문 보다는 switch 문이 가독성이 좋고 깔끔하다
+  switch (action.type) {
+    case ADD:
+      return count + 1;
+    case MINUS:
+      return count - 1;
+    default:
+      return count;
+  }
+};
+```
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+### To Do List 프로그램
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+- no-redux
 
-## Learn More
+```javascript
+const input = document.querySelector("input");
+const form = document.querySelector("form");
+const ul = document.querySelector("ul");
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+function createToDo(toDo) {
+  const li = document.createElement("li");
+  li.innerText = toDo;
+  ul.appendChild(li);
+}
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+function onSubmit(event) {
+  event.preventDefault();
+  const toDo = input.value;
+  input.value = "";
+  createToDo(toDo);
+}
 
-### Code Splitting
+form.addEventListener("submit", onSubmit);
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+- redux를 이용한 코드
 
-### Analyzing the Bundle Size
+```javascript
+import { createStore } from "redux";
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+const input = document.querySelector("input");
+const form = document.querySelector("form");
+const ul = document.querySelector("ul");
 
-### Making a Progressive Web App
+const ADD_TODO = "ADD_TODO";
+const DELETE_TODO = "DELETE_TODO";
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+// action creator => 단순히 object만 return한다
+const addToDo = (text) => {
+  return {
+    type: ADD_TODO,
+    text,
+  };
+};
 
-### Advanced Configuration
+const deleteToDo = (id) => {
+  return {
+    type: DELETE_TODO,
+    id,
+  };
+};
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+const reducer = (state = [], action) => {
+  switch (action.type) {
+    case ADD_TODO:
+      // return state.push(action.text) 는 절대 하지 않는다
+      // mutating state를 하는 대신에 new state objects를 리턴해야 한다
+      // mutation ex) friends = ["dal"];
+      //              friends.push("lynn");
+      // 이것이 friends를 mutate한 것이다 (절대 사용 X)
+      // 해당 array는 과거의 state와 새로운 todo를 갖고 있게 된다
+      const newToDoObj = { text: action.text, id: Date.now() };
+      return [newToDoObj, ...state];
+    case DELETE_TODO:
+      // filter는 새로운 array를 생성하므로 mutate하지 않는다
+      const cleaned = state.filter((toDo) => toDo.id !== action.id);
+      return cleaned;
+    default:
+      return state;
+  }
+};
 
-### Deployment
+const store = createStore(reducer);
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+store.subscribe(() => console.log(store.getState()));
 
-### `npm run build` fails to minify
+// action 을 dispatch하기 위해 만든 함수
+// action creator는 reducer 위에 선언
+const dispatchAddToDo = (text) => {
+  store.dispatch(addToDo(text));
+};
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+const dispatchDeleteToDo = (event) => {
+  const id = parseInt(event.target.parentNode.id);
+  store.dispatch(deleteToDo(id));
+};
+
+const paintToDos = () => {
+  const toDos = store.getState();
+  // clean list
+  ul.innerHTML = "";
+  toDos.forEach((toDo) => {
+    const li = document.createElement("li");
+    const btn = document.createElement("button");
+    btn.innerText = "DEL";
+    btn.addEventListener("click", dispatchDeleteToDo);
+    li.id = toDo.id;
+    li.innerText = toDo.text;
+    li.appendChild(btn);
+    ul.appendChild(li);
+  });
+};
+
+// toDo의 변화에 맞게 list를 repainting한다
+store.subscribe(paintToDos);
+
+function onSubmit(event) {
+  event.preventDefault();
+  const toDo = input.value;
+  input.value = "";
+  dispatchAddToDo(toDo);
+}
+
+form.addEventListener("submit", onSubmit);
+```
